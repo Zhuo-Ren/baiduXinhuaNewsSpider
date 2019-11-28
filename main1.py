@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-# 教程 https://www.cnblogs.com/awakenedy/articles/9182036.html
-# 教程 https://docs.python.org/3/library/datetime.html#module-datetime
+'''
+功能：在指定的起始日期和终止日期之间，每天查询一次（指定关键字和来源网站)
+'''
 
 from sysdb import SysDb  # 数据库
 from baidusearcher import baidusearcher  # 百度爬虫
 import datetime3  # 用于循环日期
 from time import sleep
+from process import searchPageProcess
+from process import resultPageProcess
 
 # 关键字
 kw = r'737max空难'
@@ -48,6 +51,8 @@ try:
             sourceWebsite=sourceWebsite,
             howManyResultWanted=howManyNewsOneDay,
             fiddler=certFile,
+            searchPageProcess=searchPageProcess,
+            resultPageProcess=resultPageProcess
         )
         # 爬取一下
         baidusearcher.search()

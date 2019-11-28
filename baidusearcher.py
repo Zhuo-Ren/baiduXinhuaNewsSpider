@@ -3,12 +3,10 @@
 import datetime3 as datetime  # 用于获取当前日期作为默认日期
 import time  # 用于获取unix时间作为url中的参数，用于睡觉
 from lxml import etree
-import re
 from indentation import indent  # 字符串缩进
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from sysdb import SysDb  # 数据库
-import traceback  # 用于获取异常的详细信息
+
 
 
 class baidusearcher():
@@ -28,6 +26,8 @@ class baidusearcher():
     searchStartTime = None  # None表示没设置时间限制
     searchEndTime = None  # None表示没设置时间限制
     resultWanted = None
+    searchPageProcess = None
+    resultPageProcess = None
 
     # 运行参数
     searchUrlInput = None  # 生成的searchUrl
@@ -44,11 +44,8 @@ class baidusearcher():
     resultAXPath = 'h3/a'  # 从resultElement到searchUrlInput的xpath
     resultUrlInput = None
     resultUrlOutput = None
-    resultTitleXPath = '/html/body/div[2]/div[3]/div/div[1]'
     resultTitle = None
-    resultTextXPath = '//*[@id="p-detail"]/p'
     resultText = None
-    resultTimeXPath = '/html/body/div[2]/div[3]/div/div[2]/span[1]'
     resultTime = None
     resultSaved = 0  # 不是每个结果都符合要求，这是已经处理了的符合要求的reasult的个数。
 
@@ -83,7 +80,9 @@ class baidusearcher():
         endY=None, endM=None, endD=None, endH=None, endMi=None, endS=None,
         howManyResultWanted=5,
         sourceWebsite=None,
-        fiddler=None
+        fiddler=None,
+        searchPageProcess = None,
+        resultPageProcess = None
     ):
         # 传参：要多少result
         baidusearcher.resultWanted = howManyResultWanted
@@ -137,6 +136,9 @@ class baidusearcher():
             baidusearcher.searchUrlInput += '%7Cstftype%3D2&tfflag=1'
         '''添加每页结果数'''
         baidusearcher.searchUrlInput += ('&rn=' + str(baidusearcher.searchHowManyResultsOnePage))
+        # 传参：处理函数
+        baidusearcher.searchPageProcess = searchPageProcess
+        baidusearcher.resultPageProcess = resultPageProcess
 
     @staticmethod
     def search():
@@ -228,104 +230,3 @@ class baidusearcher():
                         length=100, fIndent=4, lIndent=4
                     )
                 )
-
-    @staticmethod
-    def searchPageProcess():
-        # 生成保存路径
-        filePath = "./corpora"
-        filePath += ("/" + baidusearcher.searchEngine)
-        filePath += ('-' + baidusearcher.searchKeyword + "/")
-        if baidusearcher.searchSourceWebsite is not None:
-            filePath += baidusearcher.searchSourceWebsite
-        filePath += str(baidusearcher.searchStartTime.date())
-        filePath += '-'
-        filePath += str(baidusearcher.searchEndTime.date())
-        filePath += '.html'
-        # 保存搜索页
-        file = open(filePath, "wb")
-        file.write(baidusearcher.searchHtml.encode('utf-8'))
-        file.close()
-
-    @staticmethod
-    def resultPageProcess():
-        try:
-            # 打开新标签页，切换到新标签页
-            xpath = baidusearcher.resultXPath + '/' + baidusearcher.resultAXPath
-            baidusearcher.driver.find_element_by_xpath(xpath).click()
-            baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[1])
-            # 获取resultUrlOutput
-            baidusearcher.resultUrlOutput = baidusearcher.driver.current_url
-            if re.search('www.xinhuanet.com/world', baidusearcher.resultUrlOutput) is None:
-                # 只处理新华网http://www.xinhuanet.com/world分支下的新闻
-                return(False, '不是world分支下的新闻')
-            # 获取resultHtml
-            baidusearcher.resultHtml = baidusearcher.driver.page_source
-            # 获取resultRoot
-            baidusearcher.resultRoot = etree.HTML(baidusearcher.resultHtml)
-            # 获取resultTitle
-            resultTitle = baidusearcher.resultRoot.xpath(baidusearcher.resultTitleXPath)[0].text
-            resultTitle = re.sub(r'^\s*', "", resultTitle)
-            resultTitle = re.sub(r'\s*$', "", resultTitle)
-            baidusearcher.resultTitle = resultTitle
-            # 获取resultText
-            pList = baidusearcher.resultRoot.xpath(baidusearcher.resultTextXPath)
-            textList = []
-            for p in pList:
-                if p.text is not None:
-                    textList.append(p.text)
-            textList = [re.sub(r'^\s*', "", x) for x in textList]
-            textList = [re.sub(r'\s*$', "", x) for x in textList]
-            baidusearcher.resultText = '\n'.join(textList)
-            # 获取resultTime
-            resultTime = baidusearcher.resultRoot.xpath(baidusearcher.resultTimeXPath)[0].text
-            resultTimeY = int(re.search(r'(?<= )\d+(?=-)', resultTime).group())
-            resultTimeM = int(re.search(r'(?<=-)\d+(?=-)', resultTime).group())
-            resultTimeD = int(re.search(r'(?<=-)\d+(?= )', resultTime).group())
-            baidusearcher.resultTime = datetime.date(resultTimeY, resultTimeM, resultTimeD)
-            # 存到数据库
-            baidusearcher.resultSaveToDb()
-            # 如果顺利执行，则isSaved置True
-            return(True, 0)
-        # 如果有任何问题，则跳过这次循环
-        except Exception:
-            return(False, traceback.format_exc())
-        # 如果新标签页建立成功，最后要关闭新标签页，切回搜索页
-        finally:
-            if len(baidusearcher.driver.window_handles) == 2:
-                baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[1])
-                baidusearcher.driver.close()
-                baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[0])
-
-    @staticmethod
-    def resultSaveToDb():
-        SysDb.insertRow(
-            'websiteTabel',
-            {
-                '搜索引擎': baidusearcher.searchEngine,
-                '搜索关键字': baidusearcher.searchKeyword,
-                '搜索日期年': baidusearcher.searchStartTime.year,
-                '搜索日期月': baidusearcher.searchStartTime.month,
-                '搜索日期日': baidusearcher.searchStartTime.day,
-                '搜索网址': baidusearcher.searchUrlInput,
-                '搜索html': baidusearcher.searchHtml,
-                '新闻序号': baidusearcher.resultSaved,
-                '新闻ID': '%s-%s@%d/%d/%d-%d' % (
-                    baidusearcher.searchEngine,
-                    baidusearcher.searchKeyword,
-                    baidusearcher.searchStartTime.year,
-                    baidusearcher.searchStartTime.month,
-                    baidusearcher.searchStartTime.day,
-                    baidusearcher.resultIndex
-                ),
-                '新闻网址原': baidusearcher.resultUrlInput,
-                '新闻网址真': baidusearcher.resultUrlOutput,
-                '新闻html': baidusearcher.resultText,
-                '新闻标题': baidusearcher.resultTitle,
-                # '新闻作者': {'类型': '文本', '初始值': None, '主键否': '非主键'},
-                # '新闻机构': {'类型': '文本', '初始值': None, '主键否': '非主键'},
-                '新闻日期年': baidusearcher.resultTime.year,
-                '新闻日期月': baidusearcher.resultTime.month,
-                '新闻日期日': baidusearcher.resultTime.day,
-                '新闻正文': baidusearcher.resultText
-            }
-        )

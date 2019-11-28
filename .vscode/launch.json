@@ -12,7 +12,7 @@
             "pythonPath": "D:/ProgramFiles/Anaconda3/python",//可执行文件路径
             "program": "${file}",
             "cwd": "${workspaceRoot}",
-            "env": {},
+            "env": {"PYTHONPATH" : "${workspaceRoot}"},
             "envFile": "${workspaceRoot}/.env",
         },
         {

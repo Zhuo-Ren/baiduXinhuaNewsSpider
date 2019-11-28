@@ -8,7 +8,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 
-
 class baidusearcher():
     # 根本参数
     driver = None  # webdriver.Chrome()
@@ -89,11 +88,12 @@ class baidusearcher():
         # 传参：关键字
         baidusearcher.searchKeyword = keyword
         # 传参：限制来源网页
-        baidusearcher.searchSourceWebsite = sourceWebsite
+        if sourceWebsite is not None:
+            baidusearcher.searchSourceWebsite = sourceWebsite
         # 传参：限制开始时间
         now = datetime.datetime.now()
-        ifStartTimeSeted = not all([startY, startM, startD, startH, startMi, startS])
-        ifEndTimeSeted = not all([endY, endM, endD, endH, endMi, endS])
+        ifStartTimeSeted = (startY or startM or startD or startH or startMi or startS) is not None
+        ifEndTimeSeted = (endY or endM or endD or endH or endMi or endS) is not None
         if ifStartTimeSeted is True:
             startY = startY if startY is not None else now.year
             startM = startM if startY is not None else now.month
@@ -111,9 +111,12 @@ class baidusearcher():
             'endMi = endMi if endY is not None else today.day'
             'endS = endS if endY is not None else today.day'
             baidusearcher.searchEndTime = datetime.datetime(endY, endM, endD, 23, 59, 59)
-        elif ifStartTimeSeted is True:
-            # 当开始时间设置了，即使结束时间没设置，也要默认设为当前时间
-            baidusearcher.searchEndTime = now
+        else:
+            if ifStartTimeSeted is True:
+                # 当开始时间设置了，即使结束时间没设置，也要默认设为当前时间
+                baidusearcher.searchEndTime = now
+            else:
+                pass
         # 传参：搜索网址
         baidusearcher.searchUrlInput = baidusearcher.searchBaseUrl
         '''添加关键词'''

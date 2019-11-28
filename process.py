@@ -13,9 +13,18 @@ def searchPageProcess():
     filePath += ('-' + baidusearcher.searchKeyword + "/")
     if baidusearcher.searchSourceWebsite is not None:
         filePath += baidusearcher.searchSourceWebsite
-    filePath += str(baidusearcher.searchStartTime.date())
-    filePath += '-'
-    filePath += str(baidusearcher.searchEndTime.date())
+    if baidusearcher.searchStartTime is None and baidusearcher.searchEndTime is None:
+        pass
+    elif baidusearcher.searchStartTime is not None and baidusearcher.searchEndTime is None:
+        pass  # 不可能出现这种情况，以为这时endTime会被设为当前时间
+    elif baidusearcher.searchStartTime is None and baidusearcher.searchEndTime is not None:
+        filePath += '0'
+        filePath += '-'
+        filePath += str(baidusearcher.searchEndTime.date())
+    elif baidusearcher.searchStartTime is not None and baidusearcher.searchEndTime is not None:
+        filePath += str(baidusearcher.searchStartTime.date())
+        filePath += '-'
+        filePath += str(baidusearcher.searchEndTime.date())
     filePath += '.html'
     # 保存搜索页
     file = open(filePath, "wb")
@@ -78,23 +87,31 @@ def resultPageProcess():
 
 
 def resultSaveToDb():
+    now = datetime.datetime.now()
+    sY = baidusearcher.searchStartTime.year if baidusearcher.searchStartTime is not None else 0
+    sM = baidusearcher.searchStartTime.month if baidusearcher.searchStartTime is not None else 0
+    sD = baidusearcher.searchStartTime.day if baidusearcher.searchStartTime is not None else 0
+    eY = baidusearcher.searchEndTime.year if baidusearcher.searchStartTime is not None else now.year
+    eM = baidusearcher.searchEndTime.month if baidusearcher.searchStartTime is not None else now.month
+    eD = baidusearcher.searchEndTime.day if baidusearcher.searchStartTime is not None else now.day
     SysDb.insertRow(
         'websiteTabel',
         {
             '搜索引擎': baidusearcher.searchEngine,
             '搜索关键字': baidusearcher.searchKeyword,
-            '搜索日期年': baidusearcher.searchStartTime.year,
-            '搜索日期月': baidusearcher.searchStartTime.month,
-            '搜索日期日': baidusearcher.searchStartTime.day,
+            '搜索起始日期年': sY,
+            '搜索起始日期月': sM,
+            '搜索起始日期日': sD,
+            '搜索终止日期年': eY,
+            '搜索终止日期月': eM,
+            '搜索终止日期日': eD,
             '搜索网址': baidusearcher.searchUrlInput,
             '搜索html': baidusearcher.searchHtml,
             '新闻序号': baidusearcher.resultSaved,
-            '新闻ID': '%s-%s@%d/%d/%d-%d' % (
+            '新闻ID': '%s-%s@%d/%d/%d-%d/%d/%d-%d' % (
                 baidusearcher.searchEngine,
                 baidusearcher.searchKeyword,
-                baidusearcher.searchStartTime.year,
-                baidusearcher.searchStartTime.month,
-                baidusearcher.searchStartTime.day,
+                sY, sM, sD, eY, eM, eD,
                 baidusearcher.resultIndex
             ),
             '新闻网址原': baidusearcher.resultUrlInput,

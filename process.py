@@ -86,6 +86,94 @@ def resultPageProcess():
             baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[0])
 
 
+def resultPageProcessWangyi():
+    try:
+        # 在新标签页访问result页，driver句柄切换到新标签页
+        '''有bug，模拟按键方法无效：
+        baidusearcher.driver.find_element_by_xpath('//body').send_keys(Keys.CONTROL, 't')
+        baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[1])
+        baidusearcher.driver.get(baidusearcher.resultUrlInput)
+        '''
+        baidusearcher.driver.execute_script("window.open('"+baidusearcher.resultUrlInput+"','_blank');") 
+        baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[1])
+        # 获取resultUrlOutput
+        baidusearcher.resultUrlOutput = baidusearcher.driver.current_url
+        # 获取resultHtml
+        baidusearcher.resultHtml = baidusearcher.driver.page_source
+        # 获取resultRoot
+        baidusearcher.resultRoot = etree.HTML(baidusearcher.resultHtml)
+        # 获取resultTitle
+        resultTitle = baidusearcher.resultRoot.xpath('/html/body/div[4]/div[2]/h1')[0].text
+        resultTitle = re.sub(r'^\s*', "", resultTitle)
+        resultTitle = re.sub(r'\s*$', "", resultTitle)
+        baidusearcher.resultTitle = resultTitle
+        # 获取resultText
+        div = baidusearcher.resultRoot.xpath('//*[@id="endText"]')[0]
+        baidusearcher.resultText = html2textWangyi(etree.tostring(div).decode('utf-8'))
+        # 获取resultTime
+        resultTime = baidusearcher.resultRoot.xpath('/html/body/div[4]/div[2]/div[1]')[0].text
+        resultTimeY = int(re.search(r'(?<= )\d+(?=-)', resultTime).group())
+        resultTimeM = int(re.search(r'(?<=-)\d+(?=-)', resultTime).group())
+        resultTimeD = int(re.search(r'(?<=-)\d+(?= )', resultTime).group())
+        baidusearcher.resultTime = datetime.date(resultTimeY, resultTimeM, resultTimeD)
+        # 存到数据库
+        resultSaveToDb()
+        # 如果顺利执行，则isSaved置True
+        return(True, 0)
+    # 如果有任何问题，则跳过这次循环
+    except Exception:
+        return(False, traceback.format_exc())
+    # 如果新标签页建立成功，最后要关闭新标签页，切回搜索页
+    finally:
+        if len(baidusearcher.driver.window_handles) == 2:
+            baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[1])
+            baidusearcher.driver.close()
+            baidusearcher.driver.switch_to.window(baidusearcher.driver.window_handles[0])
+
+
+def html2textWangyi(htmlText):
+    # 利用lxml包处理content中的html标签，得到纯文本的content
+    plainText = ''
+    root = etree.HTML(htmlText)
+    for element in root.iter():
+        # 对于p，先换行
+        if element.tag == 'p':
+            plainText += '\n'
+            # print('\n', end='')
+        # 再考虑文本
+        #   对于<html><header>等不包含文本的标签，直接跳过
+        if element.text is None:
+            if element.tag == 'img':
+                plainText += '\n【图】\n'
+            else:
+                pass
+        #   对<!--  -->，直接跳过
+        elif re.search(r'^<cyfunction Comment at', str(element.tag)):
+            pass
+        #   对只包含不可见文本的标签，直接跳过
+        elif re.search('^\s*$', element.text):
+            pass
+        #   对包含可见文本的标签
+        else:
+            plainText += element.text.strip()  # strip()用于取出字符串首尾空格
+            # print(element.text.strip(), end='')
+        # 最后考虑尾巴文本
+        if element.tail is None:
+            pass
+        #   对只包含不可见文本的标签，直接跳过
+        elif re.search('^\s*$', element.tail):
+            pass
+        # 对包含可见文本的标签
+        else:
+            plainText += element.tail.strip()
+            # print(element.tail.strip(), end='')
+    # 取出多余空行
+    plainText = plainText.replace('\n\n', '\n')
+    plainText = re.sub(r'^\n+', "", plainText)
+    #
+    return plainText
+
+
 def resultSaveToDb():
     now = datetime.datetime.now()
     sY = baidusearcher.searchStartTime.year if baidusearcher.searchStartTime is not None else 0

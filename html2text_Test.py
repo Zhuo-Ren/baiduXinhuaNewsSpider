@@ -2,8 +2,6 @@
 from html2text import html2text
 
 contentWithTags = '''
-<html>
-    <body>
         <div>
             <div id="Content" class="article">
             <p><strong>“安享和平是人民之福，保卫和平是人民军队之责。”</strong></p> 
@@ -18,7 +16,5 @@ contentWithTags = '''
             <p><strong>“有个军人爸爸是一种怎样的体验？”</strong></p> <p><strong>“有个军人丈夫是一种怎样的体验？”</strong></p> <p><strong>......</strong></p> <strong> <p align="center">让我们一起聊聊我与军队的「不解之缘」</p> <p align="center">欢迎大家上传照片、视频、或撰写文字故事</p> <p align="center">分享您或家人与军队的故事</p> <p class="content5_xq17896_180426 red" align="center"><strong>您可以通过央视网新媒体参与活动</strong></p> <p class="content5_xq17896_180426 red" align="center">　　1、将自己或家人与军队的故事讲述给我们，您可以上传照片、视频到征集平台</p> <p class="content5_xq17896_180426 red" align="center">识别二维码进入征集平台</p> <p class="content5_xq17896_180426 red" align="center"><img alt="" src="//img3.chinadaily.com.cn/images/201811/14/5bebe863a3101a87b1daaf5e.png" id="img-5bebe863a3101a87b1daaf5e"/></p> <p class="content5_xq17896_180426 red" align="center">　　2、通过新浪微博平台，上传发布照片、视频或撰写文字故事，加话题#我和军队的不解之缘#并@央视网</p> <p class="content5_xq17896_180426 red" align="center">　　3、通过微信平台，给央视网公众号留言，上传照片、短视频或文字分享故事</p> <p align="center"><strong><span>我们会选择优秀的故事</span></strong></p> <p align="center"><strong><span>在全网多平台进行展播</span></strong></p> <p align="center"><strong><span>您的精彩故事将会分享给更多网友</span></strong></p> </strong> 
             </div>        
         </div>
-    </body>
-</html>
 '''
 print(html2text(contentWithTags))

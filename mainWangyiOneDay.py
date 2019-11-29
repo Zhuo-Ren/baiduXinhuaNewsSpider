@@ -5,17 +5,15 @@
 
 from sysdb import SysDb  # 数据库
 from baidusearcher import baidusearcher  # 百度爬虫
-import datetime3  # 用于循环日期
-from time import sleep
 from process import searchPageProcess
-from process import resultPageProcess
+from process import resultPageProcessWangyi as resultPageProcess
 
 # 关键字
 kw = r'737max空难'
 # 来源网站限制
-sourceWebsite = 'xinhuanet.com'
+sourceWebsite = 'news.163.com'
 # 每天搜几个新闻
-howManyNewsOneDay = 50
+howManyNewsOneDay = 8
 # 使用fiddler吗
 certFile = None  # "./DO_NOT_TRUST_FiddlerRoot.crt"  # None
 

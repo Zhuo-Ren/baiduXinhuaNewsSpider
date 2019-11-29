@@ -17,10 +17,13 @@ def html2text(htmlText):
         #   对于<html><header>等不包含文本的标签，直接跳过
         if element.text is None:
             pass
+        #   对<!--  -->，直接跳过
+        elif re.search(r'^<cyfunction Comment at', str(element.tag)):
+            pass
         #   对只包含不可见文本的标签，直接跳过
         elif re.search('^\s*$', element.text):
             pass
-        # 对包含可见文本的标签
+        #   对包含可见文本的标签
         else:
             plainText += element.text.strip()  # strip()用于取出字符串首尾空格
             # print(element.text.strip(), end='')
